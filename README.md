@@ -15,6 +15,12 @@ This repository contains multiple architectural implementations:
 
 This application follows **Clean Architecture** principles with **Facade Pattern** implementation, providing clear separation of concerns across four distinct layers with coordinated service management:
 
+### Clean Architecture Diagram
+
+![Clean Architecture](https://blog.cleancoder.com/uncle-bob/images/2012-08-13-the-clean-architecture/CleanArchitecture.jpg)
+
+*Source: [The Clean Architecture by Uncle Bob](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)*
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Web Layer                                │
