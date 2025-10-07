@@ -1,155 +1,192 @@
-# Customer Management REST API - Clean Architecture
+# Customer Management REST API
 
-A Spring Boot application that provides RESTful APIs for managing customer resources, implemented using **Clean Architecture** principles.
+A Spring Boot application that provides RESTful APIs for managing customer resources, implemented with **domain-driven design principles** and a **flat package structure** using the **Facade Pattern**.
 
 ## Architecture Overview
 
-This application follows **Clean Architecture** principles with **Facade Pattern** implementation, providing clear separation of concerns across four distinct layers with coordinated service management:
+This application uses a **flat package structure** with **Facade Pattern** implementation, organizing components by functionality rather than traditional architectural layers:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Web Layer                                │
-│  (Controllers, DTOs, Exception Handlers)                    │
-│  - HTTP request/response handling                           │
-│  - Input validation & JSON serialization                    │
-│  - Single dependency on Facade                              │
+│                    HTTP Interface                           │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              CustomerController                     │    │
+│  │  - REST endpoints and HTTP handling                 │    │
+│  │  - Input validation & JSON serialization            │    │
+│  │  - Single dependency on CustomerFacade              │    │
+│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              Application Layer - Facade                     │
+│                  Facade Coordination                       │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │            CustomerFacade                           │    │
-│  │  - Coordinates multiple services                    │    │
+│  │              CustomerFacade                         │    │
+│  │  - Thin delegation layer                            │    │
 │  │  - Unified interface for controllers                │    │
-│  │  - No circular dependencies                         │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                    │                    │                   │
-│                    ▼                    ▼                   │
-│  ┌─────────────────────────┐  ┌─────────────────────────┐   │
-│  │ CustomerApplicationSvc  │  │  CustomerSearchService  │   │
-│  │ - CRUD operations       │  │ - Search & filtering    │   │
-│  │ - Basic workflows       │  │ - Advanced queries      │   │
-│  │ - Simple get all        │  │ - Smart optimization    │   │
-│  └─────────────────────────┘  └─────────────────────────┘   │
-│                    │                    │                   │
-│                    └────────┬───────────┘                   │
-│                             ▼                               │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │              Use Cases Layer                        │    │
-│  │ CreateCustomer │ GetCustomer │ SearchCustomers      │    │
-│  │ UpdateCustomer │ DeleteCustomer │ GetAllCustomers   │    │
+│  │  - Direct pass-through to CustomerService           │    │
 │  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                  Domain Layer                               │
-│  (Entities, Value Objects, Repository Interfaces)           │
-│  - Core business logic and validation rules                 │
-│  - Domain entities (Customer, Address)                      │
-│  - Value objects (CustomerSearchCriteria)                   │
-│  - Repository contracts & domain exceptions                 │
-│  - Domain validators (Customer, Address, Email)             │
+│                  Business Logic                             │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              CustomerService                        │    │
+│  │  - All customer operations (CRUD + Search)          │    │
+│  │  - Business logic and validation coordination       │    │
+│  │  - Advanced search with filtering & sorting         │    │
+│  │  - Smart query optimization and pagination          │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Domain Components                          │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              Domain Models                          │    │
+│  │  - Customer (entity with business logic)            │    │
+│  │  - Address (value object)                           │    │
+│  │  - CustomerSearchCriteria (search parameters)       │    │
+│  │  - BaseEntity (common entity properties)            │    │
+│  └─────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              Domain Validators                      │    │
+│  │  - CustomerValidator (business rules)               │    │
+│  │  - AddressValidator (address validation)            │    │
+│  │  - EmailValidator (email format validation)         │    │
+│  └─────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              Domain Exceptions                      │    │
+│  │  - CustomerNotFoundException                        │    │
+│  │  - InvalidCustomerDataException                     │    │
+│  │  - InvalidAddressException, etc.                    │    │
+│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                               ▲
                               │
 ┌─────────────────────────────────────────────────────────────┐
-│               Infrastructure Layer                          │
-│  (Repository Implementations, Mappers, Configuration)       │
-│  - Data persistence (InMemoryCustomerRepository)            │
-│  - DTO-Entity mapping (Customer, Address, Search)           │
-│  - Framework configurations                                 │
-│  - External service integrations                            │
+│                Repository Components                    │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │         Repository & Data Access                    │    │
+│  │  - CustomerRepository (interface)                   │    │
+│  │  - InMemoryCustomerRepository (implementation)      │    │
+│  │  - Thread-safe ConcurrentHashMap storage            │    │
+│  └─────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              Data Mappers                           │    │
+│  │  - CustomerMapper (Entity ↔ DTO conversion)         │    │
+│  │  - AddressMapper (Address ↔ DTO conversion)         │    │
+│  │  - CustomerSearchMapper (Search criteria mapping)   │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                  Supporting Components                      │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              DTOs & Responses                       │    │
+│  │  - CustomerRequestDTO, CustomerResponseDTO          │    │
+│  │  - CustomerPatchRequestDTO, AddressDTO              │    │
+│  │  - PageResponseDTO, ErrorResponseDTO                │    │
+│  └─────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              Exception Handling                     │    │
+│  │  - GlobalExceptionHandler                           │    │
+│  │  - Centralized error response formatting            │    │
+│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Architectural Principles
 
-#### **1. Facade Pattern Benefits**
+#### **1. Simplified Facade Pattern Implementation**
 - **Single Point of Entry**: Controllers only depend on `CustomerFacade`
-- **Service Coordination**: Facade routes requests to appropriate services
-- **No Circular Dependencies**: Clean dependency graph with focused services
-- **Scalability**: Easy to add new services without affecting existing code
+- **Thin Delegation Layer**: Facade provides pass-through interface to `CustomerService`
+- **Unified Interface**: Single facade coordinates all customer operations
+- **Future Extensibility**: Ready for service decomposition when complexity grows
 
 #### **2. Clean Architecture Compliance**
 - **Dependency Inversion**: Inner layers don't depend on outer layers
-- **Single Responsibility**: Each service has one clear purpose
-- **Separation of Concerns**: Business logic separated from infrastructure
+- **Domain-Centric Design**: Business logic encapsulated in domain entities
+- **Infrastructure Independence**: Domain layer isolated from framework concerns
 - **Testability**: Each layer can be tested in isolation
 
-#### **3. Enhanced Capabilities**
-- **Advanced Search**: Multi-field filtering with smart optimization
-- **Flexible Sorting**: Multiple sort criteria with various fields
-- **Performance Optimization**: Automatic routing between simple/complex queries
-- **Comprehensive Validation**: Domain-driven validation with detailed errors
+#### **3. Centralized Business Logic**
+- **Single Service Approach**: All customer operations handled by `CustomerService`
+- **Comprehensive Operations**: CRUD, search, filtering, and sorting in one place
+- **Smart Query Optimization**: Automatic routing between simple/complex queries
+- **Domain Validation**: Business rules enforced through domain validators
+
+#### **4. Enhanced Search Capabilities**
+- **Multi-Field Filtering**: Search across name, email, phone, and address fields
+- **Flexible Sorting**: Multiple sort criteria with ascending/descending options
+- **Date Range Filtering**: Filter by creation and update timestamps
+- **Performance Optimization**: Different execution paths for simple vs complex queries
+- **Pagination Integration**: Seamless pagination with filtering and sorting
 
 ## Facade Pattern Implementation
 
-This application implements the **Facade Pattern** to coordinate multiple application services without creating circular dependencies. This provides a clean, scalable architecture that maintains single responsibility principles.
+This application implements a **simplified Facade Pattern** that provides a clean interface between the web layer and business logic, with room for future expansion as complexity grows.
 
-### Architecture with Facade
+### Current Architecture with Facade
 
 ```
 CustomerController (HTTP Layer)
     ↓ (single dependency)
-CustomerFacade (Coordination Layer)
-    ↓ ↓ (coordinates between focused services)
-    ├─ CustomerApplicationService (CRUD operations)
-    │   ├─ CreateCustomerUseCase
-    │   ├─ GetCustomerUseCase  
-    │   ├─ GetAllCustomersUseCase
-    │   ├─ UpdateCustomerUseCase
-    │   └─ DeleteCustomerUseCase
+CustomerFacade (Thin Delegation Layer)
+    ↓ (direct pass-through)
+CustomerService (Centralized Business Logic)
+    ├─ CRUD Operations
+    │   ├─ createCustomer()
+    │   ├─ getCustomerById()
+    │   ├─ updateCustomer()
+    │   ├─ patchCustomer()
+    │   └─ deleteCustomer()
     │
-    └─ CustomerSearchService (Search & filtering)
-        ├─ SearchCustomersUseCase
-        └─ GetAllCustomersUseCase (for simple queries)
+    └─ Search & Filtering Operations
+        ├─ getAllCustomersWithFiltering()
+        ├─ searchCustomers()
+        ├─ executeSearch() (with pagination)
+        ├─ executeSimpleQuery() (optimized path)
+        └─ applySorting() (multi-field sorting)
 ```
 
-### Benefits of Facade Pattern
+### Current Implementation Benefits
 
-- **No Circular Dependencies**: Each service has focused responsibilities without depending on each other
-- **Single Responsibility**: 
-  - `CustomerApplicationService`: Basic CRUD operations only
-  - `CustomerSearchService`: Search, filtering, sorting only  
-  - `CustomerFacade`: Coordination and unified interface only
-- **Scalability**: Easy to add new services (reporting, analytics, validation, etc.)
-- **Testability**: Each service can be tested in isolation
-- **Clean Controllers**: Controller only depends on the facade
+- **Single Point of Entry**: Controllers only interact with `CustomerFacade`
+- **Clean Separation**: Web layer isolated from business logic implementation
+- **Future-Ready**: Facade can easily coordinate multiple services as complexity grows
+- **Testability**: Business logic can be tested independently of web concerns
+- **Maintainability**: Changes to service implementation don't affect controllers
 
-### Service Responsibilities
+### Facade Responsibilities
 
-#### CustomerFacade
-- Routes CRUD operations → `CustomerApplicationService`
-- Routes search operations → `CustomerSearchService`  
-- Provides unified interface to controllers
-- Coordinates service interactions
+#### CustomerFacade (Current Implementation)
+- **Thin Delegation**: Direct pass-through to `CustomerService` methods
+- **Unified Interface**: Single point of contact for all customer operations
+- **Future Coordination**: Ready to coordinate multiple services when needed
+- **Clean Abstraction**: Shields controllers from service implementation details
 
-#### CustomerApplicationService
-- Basic CRUD: create, read, update, delete
-- Simple getAllCustomers operations
-- No search/filtering logic
+#### CustomerService (Current Implementation)
+- **Comprehensive Business Logic**: All customer-related operations in one place
+- **CRUD Operations**: Create, read, update, delete with full validation
+- **Advanced Search**: Multi-field filtering, sorting, and pagination
+- **Smart Optimization**: Different execution paths for simple vs complex queries
+- **Domain Integration**: Uses domain validators and mappers for data integrity
 
-#### CustomerSearchService
-- Complex search with filters and sorting
-- Smart routing between simple and filtered queries
-- All search-related business logic
+### Evolution Path
 
-## Features
+As the application grows, the facade can easily evolve to coordinate multiple specialized services:
 
-- **Clean Architecture**: Proper separation of concerns with dependency inversion
-- **Facade Pattern**: Coordinates multiple services without circular dependencies
-- **Domain-Driven Design**: Rich domain models with business logic encapsulation
-- **Use Case Driven**: Application logic organized around specific use cases
-- **Advanced Filtering & Sorting**: Comprehensive search capabilities with multiple criteria
-- **Smart Query Optimization**: Automatic routing between simple and complex queries
-- **Comprehensive Validation**: Input validation with detailed error responses
-- **Centralized Error Handling**: Global exception handler with meaningful error messages
-- **Pagination Support**: Optional pagination for listing customers
-- **Thread-Safe**: In-memory storage using `ConcurrentHashMap`
-- **Extensive Testing**: Unit tests and integration tests with high coverage
-- **Code Coverage**: JaCoCo integration for test coverage reporting
+```
+Future Architecture (when complexity increases):
+CustomerFacade
+    ├─ CustomerCRUDService (basic operations)
+    ├─ CustomerSearchService (search & filtering)
+    ├─ CustomerValidationService (complex validation)
+    ├─ CustomerAnalyticsService (reporting & metrics)
+    └─ CustomerNotificationService (events & notifications)
+```
 
 ## Exception Handling Architecture
 
@@ -328,7 +365,7 @@ The application provides detailed validation error responses for:
 ## Project Structure
 
 ```
-src/main/java/com/example/customer_management/
+src/main/java/com/example/customermanagement/
 ├── domain/                          # Domain Layer (Core Business Logic)
 │   ├── model/                       # Domain entities and value objects
 │   │   ├── BaseEntity.java         # Base entity with common fields
@@ -342,229 +379,342 @@ src/main/java/com/example/customer_management/
 │   │   ├── AddressValidator.java   # Address validation rules
 │   │   └── EmailValidator.java     # Email validation logic
 │   └── exception/                   # Domain exceptions
-│       ├── CustomerNotFoundException.java
-│       ├── InvalidCustomerDataException.java
-│       └── DuplicateCustomerException.java
-├── application/                     # Application Layer (Use Cases & Services)
-│   ├── usecase/                     # Individual use cases
-│   │   ├── CreateCustomerUseCase.java      # Create customer business logic
-│   │   ├── GetCustomerUseCase.java         # Get single customer
-│   │   ├── GetAllCustomersUseCase.java     # Get all customers (simple)
-│   │   ├── UpdateCustomerUseCase.java      # Update customer business logic
-│   │   ├── DeleteCustomerUseCase.java      # Delete customer business logic
-│   │   └── SearchCustomersUseCase.java     # Advanced search with filters/sorting
-│   ├── service/                     # Application services
-│   │   ├── CustomerApplicationService.java # CRUD operations coordination
-│   │   └── CustomerSearchService.java      # Search & filtering coordination
-│   └── facade/                      # Facade pattern coordination
-│       └── CustomerFacade.java             # Coordinates multiple services
-├── infrastructure/                  # Infrastructure Layer (External Concerns)
-│   ├── persistence/                 # Data persistence implementations
-│   │   └── InMemoryCustomerRepository.java # In-memory storage implementation
-│   └── mapper/                      # DTO-Entity mapping
-│       ├── CustomerMapper.java             # Customer entity ↔ DTO mapping
-│       ├── AddressMapper.java              # Address value object ↔ DTO mapping
-│       └── CustomerSearchMapper.java       # Search criteria ↔ DTO mapping
-├── web/                            # Web Layer (HTTP Interface)
-│   ├── controller/                  # REST controllers
-│   │   └── CustomerController.java         # HTTP endpoints (uses facade)
-│   ├── dto/                         # Data Transfer Objects
-│   │   ├── customer/               # Customer-related DTOs
-│   │   │   ├── CustomerRequestDTO.java     # Customer creation/update request
-│   │   │   └── CustomerResponseDTO.java    # Customer response
-│   │   ├── address/                # Address-related DTOs
-│   │   │   └── AddressDTO.java            # Address data transfer
-│   │   └── common/                 # Common DTOs
-│   │       ├── PageResponseDTO.java        # Paginated response wrapper
-│   │       ├── ErrorResponseDTO.java       # Error response format
-│   │       └── ValidationErrorResponseDTO.java # Validation error details
-│   └── exception/                   # Web exception handling
-│       └── GlobalExceptionHandler.java     # Centralized error handling
-└── CustomerManagementApplication.java      # Main Spring Boot application class
+│       ├── DomainException.java            # Base domain exception
+│       ├── CustomerNotFoundException.java  # Customer not found
+│       ├── InvalidCustomerDataException.java # Invalid customer data
+│       ├── InvalidAddressException.java    # Invalid address data
+│       ├── InvalidEmailFormatException.java # Invalid email format
+│       ├── InvalidDateFormatException.java # Invalid date format
+│       ├── CustomerMappingException.java   # Customer mapping errors
+│       └── AddressMappingException.java    # Address mapping errors
+├── service/                         # Application Layer (Services)
+│   └── CustomerService.java               # Main customer service (simplified architecture)
+├── facade/                          # Facade Pattern (Coordination Layer)
+│   └── CustomerFacade.java                 # Coordinates service operations
+├── repository/                      # Infrastructure Layer (Data Access)
+│   └── InMemoryCustomerRepository.java    # In-memory storage implementation
+├── mapper/                          # Infrastructure Layer (Mapping)
+│   ├── CustomerMapper.java                # Customer entity ↔ DTO mapping
+│   ├── AddressMapper.java                 # Address value object ↔ DTO mapping
+│   └── CustomerSearchMapper.java          # Search criteria ↔ DTO mapping
+├── controller/                      # Web Layer (HTTP Interface)
+│   └── CustomerController.java            # REST endpoints (uses facade)
+├── dto/                            # Data Transfer Objects
+│   ├── customer/                   # Customer-related DTOs
+│   │   ├── CustomerRequestDTO.java        # Customer creation/update request
+│   │   ├── CustomerResponseDTO.java       # Customer response
+│   │   ├── CustomerPatchRequestDTO.java   # Partial update request
+│   │   └── CustomerSearchRequestDTO.java  # Search request parameters
+│   ├── address/                    # Address-related DTOs
+│   │   └── AddressDTO.java               # Address data transfer
+│   └── common/                     # Common DTOs
+│       ├── PageResponseDTO.java           # Paginated response wrapper
+│       ├── ErrorResponseDTO.java          # Error response format
+│       └── ValidationErrorResponseDTO.java # Validation error details
+├── common/exception/                # Web Layer (Exception Handling)
+│   └── GlobalExceptionHandler.java        # Centralized error handling
+└── CustomerManagementApplication.java     # Main Spring Boot application class
 
-src/test/java/com/example/customer_management/  # Test Structure
-├── application/usecase/             # Use case tests
-│   ├── CreateCustomerUseCaseTest.java
-│   └── SearchCustomersUseCaseTest.java
-├── domain/
-│   ├── model/                      # Domain model tests
-│   │   ├── CustomerTest.java
-│   │   └── AddressTest.java
-│   └── validator/                  # Validation tests
-│       ├── CustomerValidatorTest.java
-│       ├── AddressValidatorTest.java
-│       └── EmailValidatorTest.java
-├── infrastructure/persistence/      # Repository tests
-│   └── InMemoryCustomerRepositoryTest.java
-├── web/controller/                 # Integration tests
-│   └── CustomerControllerIntegrationTest.java
-└── performance/                    # Performance tests
-    └── SearchPerformanceTest.java
+### Key Architectural Components
+
+#### **HTTP Interface** (`controller/`)
+- **Controllers**: REST endpoint definitions and HTTP handling
+- **Single Dependency**: Only depends on `CustomerFacade`
+- **Input Validation**: Bean validation and request processing
+
+#### **Coordination Layer** (`facade/`)
+- **Facade**: Unified interface and thin delegation layer
+- **Service Coordination**: Routes requests to appropriate services
+- **Future Extensibility**: Ready for multiple service coordination
+
+#### **Business Logic** (`service/`)
+- **Services**: All customer operations and business logic
+- **CRUD Operations**: Create, read, update, delete functionality
+- **Advanced Search**: Filtering, sorting, and pagination
+- **Domain Integration**: Uses domain models and validators
+
+#### **Domain Components** (`domain/`)
+- **Entities**: `Customer`, `BaseEntity` with business logic
+- **Value Objects**: `Address`, `CustomerSearchCriteria` (immutable)
+- **Validators**: Domain-specific validation logic
+- **Exceptions**: Business rule violation exceptions
+- **Repository Interfaces**: Data access contracts
+
+#### **Repository Components** (`repository/`, `mapper/`)R
+- **Repository Implementation**: In-memory data storage
+- **Mappers**: DTO ↔ Domain object transformations
+- **Data Access**: Thread-safe storage operations
+
+#### **Supporting Components** (`dto/`, `common/exception/`)
+- **DTOs**: Request/response data structures
+- **Exception Handling**: Centralized error response management
+- **Common Utilities**: Shared components and utilities
+
+
+## Getting Started
+
+### Prerequisites
+
+- **Java 21** or higher
+- **Gradle 8.x** (wrapper included)
+- **Git** for version control
+
+### Installation & Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd customermanagement
+   ```
+
+2. **Build the project:**
+   ```bash
+   ./gradlew build
+   ```
+
+3. **Run the application:**
+   ```bash
+   ./gradlew bootRun
+   ```
+
+4. **Access the API:**
+   - Base URL: `http://localhost:8080`
+   - API Base: `http://localhost:8080/api/v1/customers`
+
+### Running Tests
+
+```bash
+# Run all tests
+./gradlew test
+
+# Run tests with coverage report
+./gradlew test jacocoTestReport
+
+# View coverage report
+open build/reports/jacoco/test/html/index.html
+
+# Run code quality checks
+./gradlew check
+
+# Run PMD analysis
+./gradlew pmdMain pmdTest
+
+# Run CPD (Copy-Paste Detection)
+./gradlew runCpd
 ```
 
-## Data Model
+### Development Tools
 
-### Customer (Domain Entity)
-- `id` (UUID) - Auto-generated server-side
-- `name` (String) - Required, non-empty
-- `email` (String) - Required, valid email format (normalized to lowercase)
-- `phone` (String) - Required, non-empty
-- `address` (Address) - Required
-- `createdAt` (LocalDateTime) - Auto-generated
-- `updatedAt` (LocalDateTime) - Auto-updated
+- **JaCoCo Coverage**: Minimum 80% coverage required
+- **PMD Analysis**: Static code analysis with custom rules
+- **Copy-Paste Detection**: Identifies code duplication
+- **Lombok**: Reduces boilerplate code
+- **Spring Boot DevTools**: Hot reload during development
 
-### Address (Value Object)
-- `street` (String) - Required
-- `city` (String) - Required
-- `state` (String) - Required
-- `zipCode` (String) - Required
-- `country` (String) - Required
+## API Documentation
 
-## Design Decisions
+### Base URL
+```
+http://localhost:8080/api/v1/customers
+```
 
-### **Architectural Patterns**
+### Endpoints
 
-1. **Clean Architecture**: Proper layering with dependency inversion ensures maintainable and testable code
-2. **Facade Pattern**: Coordinates multiple application services without circular dependencies
-3. **Use Case Driven**: Each business operation is encapsulated in a specific use case
-4. **Repository Pattern**: Abstract data access through repository interfaces
-5. **Service Layer Separation**: Distinct services for CRUD vs Search operations
+#### 1. Create Customer
+```http
+POST /api/v1/customers
+Content-Type: application/json
 
-### **Domain Design**
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phone": "+1-555-123-4567",
+  "address": {
+    "street": "123 Main St",
+    "city": "New York",
+    "state": "NY",
+    "zipCode": "10001",
+    "country": "USA"
+  }
+}
+```
 
-1. **Domain-Rich Models**: Customer and Address contain business logic and validation
-2. **Value Objects**: Address and CustomerSearchCriteria implemented as immutable value objects
-3. **Domain Validators**: Centralized validation logic in domain layer (Customer, Address, Email)
-4. **Domain Exceptions**: Business-specific exceptions for better error handling
+**Response (201 Created):**
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phone": "+1-555-123-4567",
+  "address": {
+    "street": "123 Main St",
+    "city": "New York",
+    "state": "NY",
+    "zipCode": "10001",
+    "country": "USA"
+  },
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
 
-### **Technical Decisions**
+#### 2. Get Customer by ID
+```http
+GET /api/v1/customers/{id}
+```
 
-1. **Thread-Safe Storage**: `ConcurrentHashMap` ensures thread-safety for in-memory operations
-2. **UUID Identifiers**: Server-generated UUIDs prevent ID collisions and improve security
-3. **Immutable Timestamps**: `createdAt` is preserved on updates; `updatedAt` is auto-updated
-4. **Smart Query Optimization**: Automatic routing between simple and complex queries
-5. **Comprehensive Validation**: Bean Validation (JSR-380) with custom error responses
-6. **RESTful Design**: Proper HTTP status codes and unified filtering/sorting interface
+**Response (200 OK):** Same as create response
 
-### **Search & Filtering Architecture**
+#### 3. Update Customer (Full)
+```http
+PUT /api/v1/customers/{id}
+Content-Type: application/json
 
-1. **Multi-Field Filtering**: Support for field-specific and general text search
-2. **Flexible Sorting**: Multiple sort criteria with ascending/descending options
-3. **Date Range Filtering**: Created/updated timestamp filtering capabilities
-4. **Pagination Integration**: Seamless pagination with filtering and sorting
-5. **Performance Optimization**: Different execution paths for simple vs complex queries
+{
+  "name": "John Smith",
+  "email": "john.smith@example.com",
+  "phone": "+1-555-987-6543",
+  "address": {
+    "street": "456 Oak Ave",
+    "city": "Los Angeles",
+    "state": "CA",
+    "zipCode": "90210",
+    "country": "USA"
+  }
+}
+```
 
+#### 4. Update Customer (Partial)
+```http
+PATCH /api/v1/customers/{id}
+Content-Type: application/json
 
-## Clean Architecture Benefits
+{
+  "email": "newemail@example.com",
+  "address": {
+    "city": "San Francisco",
+    "state": "CA"
+  }
+}
+```
 
-1. **Independence**: The domain layer is completely independent of frameworks, databases, and external agencies
-2. **Testability**: Business logic can be tested without any external dependencies
-3. **Flexibility**: Easy to change databases, web frameworks, or external services
-4. **Maintainability**: Clear separation of concerns makes the code easier to understand and modify
-5. **Scalability**: Well-organized structure supports growth and team collaboration
+#### 5. Delete Customer
+```http
+DELETE /api/v1/customers/{id}
+```
 
-## Trade-offs and Considerations
+**Response (204 No Content)**
 
-While Clean Architecture with Facade Pattern provides significant benefits, it's important to understand the trade-offs involved in this enhanced implementation:
+#### 6. Get All Customers (with optional filtering)
+```http
+GET /api/v1/customers?page=0&size=10&search=john&city=New York&sort=name:asc,createdAt:desc
+```
 
-### ✅ **Advantages**
+**Query Parameters:**
+- `page` (optional): Page number (default: 0)
+- `size` (optional): Page size (default: 20)
+- `search` (optional): General text search across all fields
+- `name` (optional): Filter by customer name
+- `email` (optional): Filter by email address
+- `phone` (optional): Filter by phone number
+- `city` (optional): Filter by city
+- `state` (optional): Filter by state
+- `country` (optional): Filter by country
+- `zipCode` (optional): Filter by zip code
+- `createdAfter` (optional): Filter by creation date (ISO format)
+- `createdBefore` (optional): Filter by creation date (ISO format)
+- `updatedAfter` (optional): Filter by update date (ISO format)
+- `updatedBefore` (optional): Filter by update date (ISO format)
+- `sort` (optional): Sort criteria (format: `field:direction`, e.g., `name:asc,createdAt:desc`)
 
-#### **Architectural Benefits**
-- **Clear Separation of Concerns**: Each layer has well-defined responsibilities
-- **Facade Coordination**: Single point of entry eliminates circular dependencies
-- **Service Specialization**: CRUD and Search services have focused responsibilities
-- **Dependency Inversion**: High-level modules don't depend on low-level modules
-- **Framework Independence**: Core business logic is isolated from Spring Boot specifics
-- **Database Independence**: Easy to switch from in-memory to any database
-- **Testability**: Each layer and service can be unit tested in isolation
+**Response:**
+```json
+{
+  "content": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "phone": "+1-555-123-4567",
+      "address": {
+        "street": "123 Main St",
+        "city": "New York",
+        "state": "NY",
+        "zipCode": "10001",
+        "country": "USA"
+      },
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
 
-#### **Development Benefits**
-- **Team Scalability**: Multiple developers can work on different services simultaneously
-- **Code Reusability**: Use cases can be reused across different interfaces (REST, GraphQL, CLI)
-- **Maintainability**: Changes in one service rarely affect others
-- **Extensibility**: Easy to add new services (reporting, analytics) without affecting existing code
-- **Documentation**: Architecture itself serves as living documentation
+#### 7. Advanced Search
+```http
+GET /api/v1/customers/search?search=john&city=New York&sort=name:asc&page=0&size=10
+```
 
-#### **Enhanced Functionality Benefits**
-- **Advanced Search**: Multi-field filtering with smart optimization
-- **Performance Optimization**: Automatic routing between simple and complex queries
-- **Flexible API**: Single endpoint supports filtering, sorting, and pagination
-- **Comprehensive Validation**: Domain-driven validation with detailed error responses
+**Query Parameters:** Same as Get All Customers, but with required pagination parameters
 
-### ⚠️ **Trade-offs**
+### Sorting Options
 
-#### **Complexity Overhead**
-- **More Files**: Simple CRUD operations require multiple classes (Controller → Facade → Service → UseCase → Repository)
-- **Service Coordination**: Additional facade layer adds coordination complexity
-- **Learning Curve**: Developers need to understand Clean Architecture and Facade pattern principles
-- **Initial Setup Time**: More upfront design and structure compared to traditional layered architecture
-- **Potential Over-engineering**: For simple applications, this might be excessive
+Supported sort fields:
+- `name`: Customer name
+- `email`: Email address
+- `phone`: Phone number
+- `city`: Address city
+- `state`: Address state
+- `country`: Address country
+- `zipCode`: Address zip code
+- `createdAt`: Creation timestamp
+- `updatedAt`: Last update timestamp
 
-#### **Performance Considerations**
-- **Additional Abstraction Layers**: More method calls through facade and service layers
-- **DTO Mapping Overhead**: Converting between DTOs, domain objects, and search criteria
-- **Memory Usage**: Multiple object representations (DTO, Domain, SearchCriteria) consume more memory
-- **Query Optimization Overhead**: Smart routing logic adds processing time for simple queries
+Sort directions:
+- `asc`: Ascending order
+- `desc`: Descending order
 
-#### **Development Trade-offs**
-- **Boilerplate Code**: More interfaces, implementations, and mapping code
-- **Debugging Complexity**: Stack traces span multiple layers, services, and abstractions
-- **IDE Navigation**: More files to navigate between for a single feature
-- **Service Dependencies**: Need to understand which service handles which operations
+Multiple sort criteria can be combined:
+```
+sort=name:asc,createdAt:desc,city:asc
+```
 
-#### **Search Implementation Trade-offs**
-- **In-Memory Filtering**: All filtering happens in application memory (not database-level)
-- **Scalability Concerns**: Large datasets may impact performance with current implementation
-- **Query Complexity**: Advanced filtering logic increases code complexity
-- **Testing Overhead**: More test scenarios needed for filtering and sorting combinations
+### Error Responses
 
-### 🎯 **When This Architecture Makes Sense**
+All error responses follow a consistent format:
 
-#### **Recommended For:**
-- **Complex Business Logic**: Applications with rich domain models and business rules
-- **Long-term Projects**: Systems expected to evolve and grow over time
-- **Large Teams**: Projects with multiple developers working simultaneously
-- **Multiple Interfaces**: Applications serving REST APIs, GraphQL, message queues, etc.
-- **Regulatory Requirements**: Systems requiring clear audit trails and separation of concerns
-- **Enterprise Applications**: Mission-critical systems requiring high maintainability
+```json
+{
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Validation failed",
+  "path": "/api/v1/customers",
+  "details": [
+    {
+      "field": "email",
+      "rejectedValue": "invalid-email",
+      "message": "Email must be a valid email address"
+    }
+  ]
+}
+```
 
-#### **Consider Alternatives For:**
-- **Simple CRUD Applications**: Basic data management without complex business logic
-- **Prototypes/MVPs**: Quick proof-of-concepts where speed of development is priority
-- **Small Teams**: Projects with 1-2 developers where communication overhead is minimal
-- **Short-lived Projects**: Applications with limited lifespan and scope
-- **Performance-Critical Systems**: Applications where every millisecond matters
+### HTTP Status Codes
 
-### 🔄 **Alternative Approaches**
+- `200 OK`: Successful GET, PUT, PATCH operations
+- `201 Created`: Successful POST operations
+- `204 No Content`: Successful DELETE operations
+- `400 Bad Request`: Validation errors, invalid data
+- `404 Not Found`: Customer not found
+- `500 Internal Server Error`: Unexpected server errors
 
-#### **Traditional Layered Architecture**
-- **Pros**: Simpler, fewer files, faster initial development
-- **Cons**: Tight coupling, harder to test, framework dependency
-
-#### **Transaction Script Pattern**
-- **Pros**: Very simple, direct database operations
-- **Cons**: Poor scalability, business logic scattered
-
-#### **Active Record Pattern**
-- **Pros**: Rapid development, less boilerplate
-- **Cons**: Tight coupling between data and behavior
-
-### 📊 **Metrics and Measurements**
-
-#### **Development Time Impact**
-- **Initial Setup**: ~2-3x longer than traditional approach
-- **Feature Addition**: ~1.5x longer per feature initially
-- **Maintenance**: ~50% faster for changes and bug fixes
-- **Testing**: ~70% faster due to better isolation
-
-
-## Future Enhancements
-
-1. **Authentication**: JWT-based authentication implementation
-2. **Authorization**: Role-based access control setup
-3. **Caching Implementation**: Search result caching with Spring Cache
-4. **Database Setup**: Database integration
-5. **Model Context Protocol**: Implement MCP server for customer analytics and insights
 
 
 
