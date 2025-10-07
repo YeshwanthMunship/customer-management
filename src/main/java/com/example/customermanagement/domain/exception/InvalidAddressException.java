@@ -6,18 +6,20 @@ public class InvalidAddressException extends DomainException {
     private final String value;
     
     public InvalidAddressException(String field, String value, String message) {
-        super(String.format("Invalid address field '%s' with value '%s': %s", field, value, message));
+        super(message);
         this.field = field;
         this.value = value;
     }
     
-    @Override
-    public String getErrorCode() {
-        return "INVALID_ADDRESS_FIELD";
+    public InvalidAddressException(String message) {
+        super(message);
+        this.field = null;
+        this.value = null;
     }
     
-    public static InvalidAddressException nullOrEmpty(String field) {
-        return new InvalidAddressException(field, "null/empty", "cannot be null or empty");
+    @Override
+    public String getErrorCode() {
+        return "INVALID_ADDRESS";
     }
     
     public String getField() {
@@ -26,5 +28,17 @@ public class InvalidAddressException extends DomainException {
     
     public String getValue() {
         return value;
+    }
+    
+    @Override
+    public Object getErrorContext() {
+        return field != null ? new FieldContext(field, value) : null;
+    }
+    
+    public record FieldContext(String field, String value) {
+    }
+    
+    public static InvalidAddressException nullOrEmpty(String field) {
+        return new InvalidAddressException(field, null, String.format("Address %s cannot be null or empty", field));
     }
 }
