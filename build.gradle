@@ -27,6 +27,7 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	runtimeOnly 'com.h2database:h2'
 	testImplementation 'com.h2database:h2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
@@ -62,7 +63,7 @@ check.dependsOn jacocoTestCoverageVerification
 // PMD Configuration
 pmd {
 	toolVersion = '7.0.0'
-	ruleSetFiles = files("config/pmd/pmd-rules.xml")
+	ruleSetFiles = files("src/config/pmd/pmd-rules.xml")
 	ruleSets = [] // Clear default rule sets
 	ignoreFailures = true // Allow build to continue with violations for demo
 	consoleOutput = true
