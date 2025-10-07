@@ -2,6 +2,15 @@
 
 A Spring Boot application that provides RESTful APIs for managing customer resources, implemented using **Clean Architecture** principles.
 
+## 🌟 Architecture Implementations Available
+
+This repository contains multiple architectural implementations:
+
+- **Main Branch**: **Clean Architecture** with **Facade Pattern** - Current implementation focusing on dependency inversion, use cases, and coordinated service management
+- **Branch `traditional-layered-architecture`**: **Traditional Layered + Facade Architecture** - Classic layered approach enhanced with Facade pattern for service coordination
+
+> 💡 **Compare Architectures**: Switch between branches to explore different architectural approaches and understand the trade-offs between traditional layered architecture and clean architecture principles.
+
 ## Architecture Overview
 
 This application follows **Clean Architecture** principles with **Facade Pattern** implementation, providing clear separation of concerns across four distinct layers with coordinated service management:
